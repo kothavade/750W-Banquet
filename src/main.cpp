@@ -1,20 +1,32 @@
 #include "main.h"
 
-/**
- * A callback function for LLEMU's center button.
- *
- * When this callback is fired, it will toggle line 2 of the LCD text between
- * "I was pressed!" and nothing.
- */
-void on_center_button() {
-	static bool pressed = false;
-	pressed = !pressed;
-	if (pressed) {
-		pros::lcd::set_text(2, "I was pressed!");
-	} else {
-		pros::lcd::clear_line(2);
-	}
-}
+Controller master(E_CONTROLLER_MASTER);
+//optionally define a non-standard brake behavior
+int brake_behavior = E_MOTOR_BRAKE_COAST;
+int FRONT_LEFT_MOTOR = 1;
+int FRONT_RIGHT_MOTOR = 2;
+int BACK_LEFT_MOTOR = 3;
+int BACK_RIGHT_MOTOR = 4;
+int BACK_CLAW = 5;
+int FRONT_CLAW = 6;
+int FRONT_LIFT = 7;
+
+//temp for testing on another bot:
+int MIDDLE_LEFT_MOTOR = 8;
+int MIDDLE_RIGHT_MOTOR = 9;
+
+Motor front_left (FRONT_LEFT_MOTOR, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
+Motor back_left (BACK_LEFT_MOTOR, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
+Motor front_right (FRONT_RIGHT_MOTOR, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_DEGREES);
+Motor back_right (BACK_RIGHT_MOTOR, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_DEGREES);
+
+//temp for testing on another bot:
+Motor middle_left (MIDDLE_LEFT_MOTOR, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
+Motor middle_right (MIDDLE_RIGHT_MOTOR, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_DEGREES);
+
+Motor back_claw (BACK_CLAW, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
+Motor front_claw (FRONT_CLAW, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
+Motor front_lift (FRONT_LIFT, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
 
 /**
  * Runs initialization code. This occurs as soon as the program is started.
@@ -23,10 +35,9 @@ void on_center_button() {
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
-	pros::lcd::initialize();
-	pros::lcd::set_text(1, "Hello PROS User!");
+	lcd::initialize();
+	lcd::set_text(1, "750W Banquet Code");
 
-	pros::lcd::register_btn1_cb(on_center_button);
 }
 
 /**
@@ -58,7 +69,10 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+void autonomous() {
+
+
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -74,19 +88,20 @@ void autonomous() {}
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	pros::Motor left_mtr(1);
-	pros::Motor right_mtr(2);
-
 	while (true) {
-		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
-		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);
-		int left = master.get_analog(ANALOG_LEFT_Y);
-		int right = master.get_analog(ANALOG_RIGHT_Y);
-
-		left_mtr = left;
-		right_mtr = right;
-		pros::delay(20);
+		int left_y = master.get_analog(ANALOG_LEFT_Y);
+		int right_x = master.get_analog(ANALOG_RIGHT_X);
+		int left_y_smooth =  (0.01 * pow(left_y,2)) * (left_y / std::abs(left_y));
+		int right_x_smooth =  (0.01 * pow(right_x,2)) * (right_x / std::abs(right_x));
+		int left_motors = left_y_smooth + right_x_smooth;
+		int right_motors = left_y_smooth - right_x_smooth;
+		front_left.move(left_motors);
+		back_left.move(left_motors);
+		front_right.move(right_motors);
+		back_right.move(right_motors);
+		//temp for testing on another bot:
+		middle_left.move(left_motors);
+		middle_right.move(right_motors);
+		delay(20);
 	}
 }
