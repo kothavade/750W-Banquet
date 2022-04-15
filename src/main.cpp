@@ -37,6 +37,7 @@ Motor front_lift (FRONT_LIFT, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES
 void initialize() {
 	lcd::initialize();
 	lcd::set_text(1, "750W Banquet Code");
+	lcd::set_text(2, "by: Ved K.");
 
 }
 
@@ -102,6 +103,28 @@ void opcontrol() {
 		//temp for testing on another bot:
 		middle_left.move(left_motors);
 		middle_right.move(right_motors);
+
+		if (master.get_digital(DIGITAL_R1)) {
+			front_claw.move(127);
+		} else if (master.get_digital(DIGITAL_R2)) {
+			front_claw.move(-127);
+		} else {
+			front_claw.move(0);
+		}
+		if (master.get_digital(DIGITAL_L1)) {
+			back_claw.move(127);
+		} else if (master.get_digital(DIGITAL_L2)) {
+			back_claw.move(-127);
+		} else {
+			back_claw.move(0);
+		}
+		if (master.get_digital(DIGITAL_A)) {
+			front_lift.move(127);
+		} else if (master.get_digital(DIGITAL_B)) {
+			front_lift.move(-127);
+		} else {
+			front_lift.move(0);
+		}
 		delay(20);
 	}
 }
