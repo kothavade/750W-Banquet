@@ -1,8 +1,6 @@
 #include "main.h"
 
-//controller
-Controller master(E_CONTROLLER_MASTER);
-
+//ENV Variables:
 //ports
 int FRONT_LEFT_MOTOR = 15;
 int FRONT_RIGHT_MOTOR = 16;
@@ -11,19 +9,20 @@ int BACK_RIGHT_MOTOR = 18;
 int FRONT_CLAW_LEFT = 12;
 int FRONT_CLAW_RIGHT = 13;
 int BACK_CLAW = 11;
-
 //normal/turbo speeds
 int SPEED_SLOW = 75;
 int SPEED_FAST = 127;
 int SPEED = SPEED_SLOW;
 bool turbo = false;
 
+//Object Definitions:
+//controller
+Controller master(E_CONTROLLER_MASTER);
 //drive motors
 Motor front_left (FRONT_LEFT_MOTOR, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
 Motor back_left (BACK_LEFT_MOTOR, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
 Motor front_right (FRONT_RIGHT_MOTOR, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_DEGREES); //right motors reversed based on mounting position
 Motor back_right (BACK_RIGHT_MOTOR, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_DEGREES);
-
 //claw motors
 Motor back_claw (BACK_CLAW, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
 Motor front_claw_left (FRONT_CLAW_LEFT, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
@@ -35,7 +34,7 @@ void initialize() {
 	lcd::set_text(1, "750W Banquet Code");
 	lcd::set_text(2, "by: Ved K.");
 	lcd::set_text(3, "v1.0");
-	lcd::set_text(4, "Initializing...");
+	lcd::set_text(4, "Currently: Initializing...");
 	delay(1000);
 }
 
@@ -45,12 +44,15 @@ void disabled() {}
 //not necessary
 void competition_initialize() {}
 
-//TODO
-void autonomous() {}
+void autonomous() {
+	lcd::set_text(4, "Currently: In Autonomous Mode.");
+	//TODO: Autonomous Code
+	//Current plan: Right side, take middle mobile goal back to alliance side
+}
 
 //driver control
 void opcontrol() {
-	lcd::set_text(4, "Operator Mode...");
+	lcd::set_text(4, "Currently: In Operator Mode.");
 	//this is so that the claw motor holds it position once raised
 	back_claw.set_brake_mode(E_MOTOR_BRAKE_BRAKE);
 	//runs in a loop, polls inputs from controller every 20ms
@@ -88,6 +90,7 @@ void opcontrol() {
 			front_claw_left.move(0);
 			front_claw_right.move(0);
 		}
+		//toggle turbo mode for claw(s) with B
 		if (master.get_digital(DIGITAL_B)) {
 			if (!turbo) {
 				turbo = true;
@@ -98,6 +101,6 @@ void opcontrol() {
 				SPEED = SPEED_SLOW;
 			}
 		}
-		delay(20);
+		delay(20); //polling rate
 	}
 }
