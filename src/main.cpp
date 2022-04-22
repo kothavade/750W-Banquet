@@ -1,129 +1,102 @@
 #include "main.h"
 
+//controller
 Controller master(E_CONTROLLER_MASTER);
-//optionally define a non-standard brake behavior
-int brake_behavior = E_MOTOR_BRAKE_COAST;
-int FRONT_LEFT_MOTOR = 1;
-int FRONT_RIGHT_MOTOR = 2;
-int BACK_LEFT_MOTOR = 3;
-int BACK_RIGHT_MOTOR = 4;
-int BACK_CLAW = 5;
-int FRONT_CLAW = 6;
-int FRONT_LIFT = 7;
 
-//temp for testing on another bot:
-int MIDDLE_LEFT_MOTOR = 8;
-int MIDDLE_RIGHT_MOTOR = 9;
+//ports
+int FRONT_LEFT_MOTOR = 15;
+int FRONT_RIGHT_MOTOR = 16;
+int BACK_LEFT_MOTOR = 17;
+int BACK_RIGHT_MOTOR = 18;
+int FRONT_CLAW_LEFT = 12;
+int FRONT_CLAW_RIGHT = 13;
+int BACK_CLAW = 11;
 
+//normal/turbo speeds
+int SPEED_SLOW = 75;
+int SPEED_FAST = 127;
+int SPEED = SPEED_SLOW;
+bool turbo = false;
+
+//drive motors
 Motor front_left (FRONT_LEFT_MOTOR, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
 Motor back_left (BACK_LEFT_MOTOR, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
-Motor front_right (FRONT_RIGHT_MOTOR, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_DEGREES);
+Motor front_right (FRONT_RIGHT_MOTOR, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_DEGREES); //right motors reversed based on mounting position
 Motor back_right (BACK_RIGHT_MOTOR, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_DEGREES);
 
-//temp for testing on another bot:
-Motor middle_left (MIDDLE_LEFT_MOTOR, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
-Motor middle_right (MIDDLE_RIGHT_MOTOR, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_DEGREES);
-
+//claw motors
 Motor back_claw (BACK_CLAW, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
-Motor front_claw (FRONT_CLAW, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
-Motor front_lift (FRONT_LIFT, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
+Motor front_claw_left (FRONT_CLAW_LEFT, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_DEGREES);
+Motor front_claw_right (FRONT_CLAW_RIGHT, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_DEGREES); //right motor reversed for same reason as above
 
-/**
- * Runs initialization code. This occurs as soon as the program is started.
- *
- * All other competition modes are blocked by initialize; it is recommended
- * to keep execution time for this mode under a few seconds.
- */
 void initialize() {
+	//lcd
 	lcd::initialize();
 	lcd::set_text(1, "750W Banquet Code");
 	lcd::set_text(2, "by: Ved K.");
-
+	lcd::set_text(3, "v1.0");
+	lcd::set_text(4, "Initializing...");
+	delay(1000);
 }
 
-/**
- * Runs while the robot is in the disabled state of Field Management System or
- * the VEX Competition Switch, following either autonomous or opcontrol. When
- * the robot is enabled, this task will exit.
- */
+//not necessary
 void disabled() {}
 
-/**
- * Runs after initialize(), and before autonomous when connected to the Field
- * Management System or the VEX Competition Switch. This is intended for
- * competition-specific initialization routines, such as an autonomous selector
- * on the LCD.
- *
- * This task will exit when the robot is enabled and autonomous or opcontrol
- * starts.
- */
+//not necessary
 void competition_initialize() {}
 
-/**
- * Runs the user autonomous code. This function will be started in its own task
- * with the default priority and stack size whenever the robot is enabled via
- * the Field Management System or the VEX Competition Switch in the autonomous
- * mode. Alternatively, this function may be called in initialize or opcontrol
- * for non-competition testing purposes.
- *
- * If the robot is disabled or communications is lost, the autonomous task
- * will be stopped. Re-enabling the robot will restart the task, not re-start it
- * from where it left off.
- */
-void autonomous() {
+//TODO
+void autonomous() {}
 
-
-}
-
-/**
- * Runs the operator control code. This function will be started in its own task
- * with the default priority and stack size whenever the robot is enabled via
- * the Field Management System or the VEX Competition Switch in the operator
- * control mode.
- *
- * If no competition control is connected, this function will run immediately
- * following initialize().
- *
- * If the robot is disabled or communications is lost, the
- * operator control task will be stopped. Re-enabling the robot will restart the
- * task, not resume it from where it left off.
- */
+//driver control
 void opcontrol() {
+	lcd::set_text(4, "Operator Mode...");
+	//this is so that the claw motor holds it position once raised
+	back_claw.set_brake_mode(E_MOTOR_BRAKE_BRAKE);
+	//runs in a loop, polls inputs from controller every 20ms
 	while (true) {
-		int left_y = master.get_analog(ANALOG_LEFT_Y);
-		int right_x = master.get_analog(ANALOG_RIGHT_X);
-		int left_y_smooth =  (0.01 * pow(left_y,2)) * (left_y / std::abs(left_y));
-		int right_x_smooth =  (0.01 * pow(right_x,2)) * (right_x / std::abs(right_x));
-		int left_motors = left_y_smooth + right_x_smooth;
-		int right_motors = left_y_smooth - right_x_smooth;
+		//raw inputs from controller
+		int left_y_raw = master.get_analog(ANALOG_LEFT_Y);
+		int right_x_raw = master.get_analog(ANALOG_RIGHT_X);
+		//use quadratic curve to smooth out inputs
+		int left = (0.0085 * pow(left_y_raw,2)) * (left_y_raw / std::abs(left_y_raw));
+		int right = (0.0085 * pow(right_x_raw,2)) * (right_x_raw / std::abs(right_x_raw));
+		//combine smooth inputs for power/turn
+		int left_motors = left + right;
+		int right_motors = left - right;
+		//move motors
 		front_left.move(left_motors);
 		back_left.move(left_motors);
 		front_right.move(right_motors);
 		back_right.move(right_motors);
-		//temp for testing on another bot:
-		middle_left.move(left_motors);
-		middle_right.move(right_motors);
-
-		if (master.get_digital(DIGITAL_R1)) {
-			front_claw.move(127);
-		} else if (master.get_digital(DIGITAL_R2)) {
-			front_claw.move(-127);
-		} else {
-			front_claw.move(0);
-		}
-		if (master.get_digital(DIGITAL_L1)) {
-			back_claw.move(127);
-		} else if (master.get_digital(DIGITAL_L2)) {
-			back_claw.move(-127);
+		//back claw controlled by R1/R2
+		if (master.get_digital(DIGITAL_R2)) {
+			back_claw.move(SPEED);
+		} else if (master.get_digital(DIGITAL_R1)) {
+			back_claw.move(-SPEED);
 		} else {
 			back_claw.move(0);
 		}
-		if (master.get_digital(DIGITAL_A)) {
-			front_lift.move(127);
-		} else if (master.get_digital(DIGITAL_B)) {
-			front_lift.move(-127);
+		//front claw controlled by L1/L2
+		if (master.get_digital(DIGITAL_L2)) {
+			front_claw_left.move(SPEED);
+			front_claw_right.move(SPEED);
+		} else if (master.get_digital(DIGITAL_L1)) {
+			front_claw_left.move(-SPEED);
+			front_claw_right.move(-SPEED);
 		} else {
-			front_lift.move(0);
+			front_claw_left.move(0);
+			front_claw_right.move(0);
+		}
+		if (master.get_digital(DIGITAL_B)) {
+			if (!turbo) {
+				turbo = true;
+				SPEED = SPEED_FAST;
+			}
+			else {
+				turbo = false;
+				SPEED = SPEED_SLOW;
+			}
 		}
 		delay(20);
 	}
